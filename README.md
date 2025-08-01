@@ -1,349 +1,199 @@
 # Blog API Documentation
 
-## 🚀 Server Configuration
-
-**Base URL:** `http://localhost:3000`  
-**Authentication:** JWT tokens via HttpOnly cookies  
-**Content-Type:** `application/json`  
-**CORS:** Requires `credentials: true` in all requests
-
-## 📋 Response Structure
-
-All responses follow this format:
-
-```json
-{
-  "status": "success" | "error" | "redirect",
-  "message": "Human readable message",
-  "data": { /* Response data */ },
-  "code": "ERROR_CODE" // Only for specific errors like TOKEN_EXPIRED
-}
+## Base URL
+```
+http://localhost:3000
 ```
 
-## 🔐 Authentication System
+## Authentication
+The API uses JWT tokens stored in HTTP-only cookies:
+- `accessToken`: 15 minutes expiry
+- `refreshToken`: 7 days expiry
 
-### Cookie-Based JWT Authentication
-
--   **Access Token:** `accessToken` cookie (15 minutes, HttpOnly)
--   **Refresh Token:** `refreshToken` cookie (7 days, HttpOnly)
--   **Automatic:** Cookies set/cleared by API automatically
-
-### User Object
-
+## Standard Response Format
 ```json
 {
-	"id": 1,
-	"name": "John Doe",
-	"email": "john@example.com"
+  "status": "success" | "error",
+  "message": "Response message",
+  "data": {} // Present on success responses
 }
 ```
 
 ---
 
-## 🔑 Authentication Routes & Frontend Actions
+## Authentication Routes (`/api/auth`)
 
-### Register Button Click
+### POST `/api/auth/register`
+Creates a new user account with email, password, and name.
+Redirects authenticated users to home page.
 
-**Route:** `POST /api/auth/register`
-
-**When to Call:** User clicks "Sign Up" or "Register" button
-
-**Request:**
-
+**Request Body:**
 ```json
 {
-	"name": "John Doe",
-	"email": "john@example.com",
-	"password": "password123"
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123"
 }
 ```
 
 **Success Response (201):**
-
 ```json
 {
-	"status": "success",
-	"message": "User registered successfully",
-	"data": {
-		"user": {
-			"id": 1,
-			"name": "John Doe",
-			"email": "john@example.com"
-		}
-	}
+  "status": "success",
+  "message": "User registered successfully",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
 }
 ```
-
-**Frontend Action:** Redirect to dashboard/home page after successful registration
 
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Name is required" // or other validation messages
-  }
-  ```
-- **409** - Duplicate email:
-  ```json
-  {
-    "status": "error",
-    "message": "User with this email already exists"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Registration failed"
-  }
-  ```
+- `400`: Validation errors (missing fields, invalid email, weak password)
+- `409`: User already exists
+- `500`: Registration failed
 
-### Login Button Click
+### POST `/api/auth/login`
+Authenticates user with email and password, sets authentication cookies.
+Redirects authenticated users to home page.
 
-**Route:** `POST /api/auth/login`
-
-**When to Call:** User clicks "Login" or "Sign In" button
-
-**Request:**
-
+**Request Body:**
 ```json
 {
-	"email": "john@example.com",
-	"password": "password123"
+  "email": "john@example.com",
+  "password": "password123"
 }
 ```
 
 **Success Response (200):**
-
 ```json
 {
-	"status": "success",
-	"message": "Logged in successfully",
-	"data": {
-		"user": {
-			"id": 1,
-			"name": "John Doe",
-			"email": "john@example.com"
-		}
-	}
+  "status": "success",
+  "message": "Logged in successfully",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
 }
 ```
-
-**Frontend Action:** Redirect to dashboard/home page after successful login
 
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Email is required" // or "Password is required", "Please provide a valid email address"
-  }
-  ```
-- **401** - Invalid credentials:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid email or password"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Login failed"
-  }
-  ```
+- `400`: Missing email or password
+- `401`: Invalid credentials
+- `500`: Login failed
 
-### Auto Token Refresh
-
-**Route:** `POST /api/auth/refresh`
-
-**When to Call:**
-
--   When API returns `TOKEN_EXPIRED` error
--   Automatically before token expires
--   On app initialization to check auth status
-
-**Request:** No body required
+### POST `/api/auth/refresh`
+Generates new access token using refresh token from cookies.
+Rotates both access and refresh tokens.
 
 **Success Response (200):**
-
 ```json
 {
-	"status": "success",
-	"message": "Token refreshed successfully",
-	"data": {
-		"user": {
-			"id": 1,
-			"name": "John Doe",
-			"email": "john@example.com"
-		}
-	}
+  "status": "success",
+  "message": "Token refreshed successfully",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
 }
 ```
 
-**Frontend Action:** Continue with original request, update user state
+**Error Responses:**
+- `401`: Missing or invalid refresh token
+- `401`: Token expired
 
-**Error Response (401):**
-```json
-{
-  "status": "error",
-  "message": "Token refresh failed"
-}
-```
-**Frontend Action:** Redirect to login page
-**Error Response (401):**
-
-```json
-{
-	"status": "error",
-	"message": "Token refresh failed"
-}
-```
-
-**Frontend Action:** Redirect to login page
-
-### Logout Button Click
-
-**Route:** `POST /api/auth/logout`
-
-**When to Call:** User clicks "Logout" or "Sign Out" button
-
-**Request:** No body required
+### POST `/api/auth/logout`
+Clears authentication cookies and removes refresh token from database.
+Always returns success even if token doesn't exist.
 
 **Success Response (200):**
-
 ```json
 {
-	"status": "success",
-	"message": "Logged out successfully"
+  "status": "success",
+  "message": "Logged out successfully"
 }
 ```
-
-**Frontend Action:** Clear user state, redirect to login/home page
-
-### Redirect Protection for Authenticated Users
-
-**Routes:** `POST /api/auth/register` and `POST /api/auth/login`
-
-**When Already Logged In:** API returns redirect response instead of processing
-
-**Response (302):**
-
-```json
-{
-	"status": "redirect",
-	"message": "Already authenticated",
-	"redirectUrl": "/",
-	"data": {
-		"user": {
-			"id": 1,
-			"name": "John Doe",
-			"email": "john@example.com"
-		}
-	}
-}
-```
-
-**Frontend Action:** Redirect to home page, don't show login/register forms
 
 ---
 
-## 📝 Posts Routes & Frontend Actions
+## Posts Routes (`/api/posts`)
 
-### Post Object
-
-```json
-{
-	"id": 1,
-	"title": "My Post Title",
-	"content": "Post content here",
-	"published": true,
-	"createdAt": "2024-01-01T00:00:00.000Z",
-	"updatedAt": "2024-01-01T00:00:00.000Z",
-	"author": {
-		"id": 1,
-		"name": "John Doe",
-		"email": "john@example.com"
-	},
-	"commentsCount": 5,
-	"likesCount": 12,
-	"isLikedByUser": false,
-	"tags": [
-		{
-			"id": 1,
-			"name": "javascript"
-		}
-	]
-}
-```
-
-### Home Page Load / View All Posts
-
-**Route:** `GET /api/posts?published=true`
-
-**When to Call:**
-
--   Page load for home/blog page
--   "View All Posts" button click
--   Filter toggle between published/draft posts
+### GET `/api/posts`
+Retrieves all published posts with optional authentication for enhanced features.
+Query parameter `published=false` shows drafts (only for authenticated users).
 
 **Query Parameters:**
-
--   `published=true` - Only published posts (default)
--   `published=false` - Only draft posts (for admin/own posts)
+- `published`: "true" (default) | "false"
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Posts fetched successfully",
   "data": {
-    "posts": [Post, Post, ...]
+    "posts": [
+      {
+        "id": 1,
+        "title": "My First Post",
+        "content": "This is the content...",
+        "published": true,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z",
+        "author": {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "commentsCount": 5,
+        "likesCount": 10,
+        "isLikedByUser": false,
+        "tags": [
+          {
+            "id": 1,
+            "name": "javascript"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-**Frontend Action:** Display posts list, no redirect needed
-
-**Error Response (500):**
-```json
-{
-  "status": "error",
-  "message": "Failed to fetch posts"
-}
-```
-
-**Error Response (500):**
-
-```json
-{
-	"status": "error",
-	"message": "Failed to fetch posts"
-}
-```
-
-### View Single Post Click
-
-**Route:** `GET /api/posts/:postId`
-
-**When to Call:**
-
--   User clicks on post title/card
--   Direct link to post
--   "Read More" button click
+### GET `/api/posts/:postId`
+Retrieves a specific post by ID with comments included.
+Shows draft posts only to their authors.
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Post fetched successfully",
   "data": {
     "post": {
-      ...Post,
+      "id": 1,
+      "title": "My First Post",
+      "content": "This is the content...",
+      "published": true,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "commentsCount": 2,
+      "likesCount": 5,
+      "isLikedByUser": true,
+      "tags": [],
       "comments": [
         {
           "id": 1,
@@ -351,7 +201,7 @@ All responses follow this format:
           "createdAt": "2024-01-01T00:00:00.000Z",
           "author": {
             "id": 2,
-            "name": "Jane Doe"
+            "name": "Jane Smith"
           }
         }
       ]
@@ -360,959 +210,504 @@ All responses follow this format:
 }
 ```
 
-**Frontend Action:** Display post detail page with comments
-
 **Error Responses:**
-- **400** - Invalid post ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid post ID"
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to fetch post"
-  }
-  ```
+- `400`: Invalid post ID
+- `404`: Post not found
 
-### Create Post Button Click
+### POST `/api/posts` 🔒
+Creates a new post for the authenticated user.
+Requires authentication and validates title uniqueness per user.
 
-**Route:** `POST /api/posts`
-
-**When to Call:**
-
--   "Create Post" or "Publish" button click
--   "Save Draft" button click (with `published: false`)
-
-**Authentication Required:** Yes - redirect to login if not authenticated
-
-**Request:**
-
+**Request Body:**
 ```json
 {
-	"title": "My New Post",
-	"content": "Post content here...",
-	"published": true
+  "title": "My New Post",
+  "content": "Post content here...",
+  "published": false
 }
 ```
 
 **Success Response (201):**
-
 ```json
 {
   "status": "success",
   "message": "Post created successfully",
   "data": {
-    "post": Post
+    "post": {
+      "id": 2,
+      "title": "My New Post",
+      "content": "Post content here...",
+      "published": false,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "commentsCount": 0,
+      "likesCount": 0,
+      "isLikedByUser": false,
+      "tags": []
+    }
   }
 }
 ```
 
-**Frontend Action:** Redirect to post detail page or posts list
-
 **Error Responses:**
-- **401** - Unauthorized (no token):
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **401** - Token expired:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token expired. Please refresh your token.",
-    "code": "TOKEN_EXPIRED"
-  }
-  ```
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Title is required" // or "Content is required"
-  }
-  ```
-- **409** - Duplicate title:
-  ```json
-  {
-    "status": "error",
-    "message": "You already have a post with this title"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to create post"
-  }
-  ```
+- `400`: Missing title or content
+- `401`: Authentication required
+- `409`: Title already exists for this user
 
-### Edit Post Button Click
+### PUT/PATCH `/api/posts/:postId` 🔒
+Updates an existing post owned by the authenticated user.
+Allows partial updates of title, content, and published status.
 
-**Route:** `PUT /api/posts/:postId` or `PATCH /api/posts/:postId`
-
-**When to Call:**
-
--   "Edit" button click on post
--   "Update Post" or "Save Changes" button click
-
-**Authentication Required:** Yes - must be post author
-
-**Request (all fields optional):**
-
+**Request Body:**
 ```json
 {
-	"title": "Updated Title",
-	"content": "Updated content",
-	"published": false
+  "title": "Updated Title",
+  "content": "Updated content...",
+  "published": true
 }
 ```
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Post updated successfully",
   "data": {
-    "post": Post
+    "post": {
+      "id": 1,
+      "title": "Updated Title",
+      "content": "Updated content...",
+      "published": true,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T01:00:00.000Z",
+      "author": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "commentsCount": 0,
+      "likesCount": 0,
+      "isLikedByUser": false,
+      "tags": []
+    }
   }
 }
 ```
 
-**Frontend Action:** Update post in UI, optionally redirect to post detail
-
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid post ID" // or "No update data provided"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **403** - Not post owner:
-  ```json
-  {
-    "status": "error",
-    "message": "You can only update your own posts"
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **409** - Title conflict:
-  ```json
-  {
-    "status": "error",
-    "message": "You already have a post with this title"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to update post"
-  }
-  ```
+- `400`: Invalid post ID or no update data
+- `401`: Authentication required
+- `403`: Can only update own posts
+- `404`: Post not found
+- `409`: Title already exists
 
-### Delete Post Button Click
-
-**Route:** `DELETE /api/posts/:postId`
-
-**When to Call:**
-
--   "Delete" button click (usually with confirmation dialog)
--   "Move to Trash" button click
-
-**Authentication Required:** Yes - must be post author
+### DELETE `/api/posts/:postId` 🔒
+Deletes a post owned by the authenticated user.
+Cascades to delete all related comments, likes, and tags.
 
 **Success Response (200):**
-
-```json
-{
-	"status": "success",
-	"message": "Post deleted successfully"
-}
-```
-
-**Frontend Action:** Remove post from UI, redirect to posts list if on detail page
-
-**Error Responses:**
-- **400** - Invalid post ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid post ID"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **403** - Not post owner:
-  ```json
-  {
-    "status": "error",
-    "message": "You can only delete your own posts"
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to delete post"
-  }
-  ```
-
-### My Posts Page Load
-
-**Route:** `GET /api/posts/my/posts`
-
-**When to Call:**
-
--   "My Posts" navigation click
--   "Dashboard" or "My Content" page load
-
-**Authentication Required:** Yes
-
-**Success Response (200):**
-
 ```json
 {
   "status": "success",
-  "message": "Your posts fetched successfully",
-  "data": {
-    "posts": [Post, Post, ...]
-  }
+  "message": "Post deleted successfully"
 }
 ```
 
-**Frontend Action:** Display user's posts (both published and drafts)
-
 **Error Responses:**
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to fetch your posts"
-  }
-  ```
+- `400`: Invalid post ID
+- `401`: Authentication required
+- `403`: Can only delete own posts
+- `404`: Post not found
 
-### User Profile Posts Click
-
-**Route:** `GET /api/posts/user/:userId`
-
-**When to Call:**
-
--   Click on author name/profile
--   "View Author's Posts" button click
--   User profile page load
+### GET `/api/posts/user/:userId`
+Retrieves all posts by a specific user.
+Shows only published posts unless requesting user is the author.
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "User posts fetched successfully",
   "data": {
-    "posts": [Post, Post, ...]
+    "posts": [
+      {
+        "id": 1,
+        "title": "User's Post",
+        "content": "Content...",
+        "published": true,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z",
+        "author": {
+          "id": 2,
+          "name": "Jane Smith",
+          "email": "jane@example.com"
+        },
+        "commentsCount": 3,
+        "likesCount": 7,
+        "isLikedByUser": false,
+        "tags": []
+      }
+    ]
   }
 }
 ```
 
-**Frontend Action:** Display user's published posts only (unless viewing own profile)
+**Error Responses:**
+- `400`: Invalid user ID
+- `404`: User not found
+
+### GET `/api/posts/my/posts` 🔒
+Retrieves all posts owned by the authenticated user.
+Shows both published and draft posts.
+
+**Success Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Your posts fetched successfully",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "My Draft Post",
+        "content": "Draft content...",
+        "published": false,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z",
+        "author": {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "commentsCount": 0,
+        "likesCount": 0,
+        "isLikedByUser": false,
+        "tags": []
+      }
+    ]
+  }
+}
+```
 
 **Error Responses:**
-- **400** - Invalid user ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid user ID"
-  }
-  ```
-- **404** - User not found:
-  ```json
-  {
-    "status": "error",
-    "message": "User not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to fetch user posts"
-  }
-  ```
+- `401`: Authentication required
 
 ---
 
-## 💬 Interactions Routes & Frontend Actions
+## Interactions Routes (`/api/interactions`)
 
-### Comment Object
+### POST `/api/interactions/posts/:postId/like` 🔒
+Toggles like status for a post by the authenticated user.
+Also manages user's liked tags based on post tags.
 
+**Success Response (200):**
 ```json
 {
-	"id": 1,
-	"content": "This is my comment",
-	"createdAt": "2024-01-01T00:00:00.000Z",
-	"author": {
-		"id": 1,
-		"name": "John Doe"
-	}
+  "status": "success",
+  "message": "Post liked successfully",
+  "data": {
+    "isLiked": true,
+    "likeCount": 11
+  }
 }
 ```
 
-### Load Comments
+**Error Responses:**
+- `400`: Invalid post ID
+- `401`: Authentication required
+- `404`: Post not found
 
-**Route:** `GET /api/interactions/posts/:postId/comments`
-
-**When to Call:**
-
--   Post detail page load
--   "Show Comments" button click
--   "Refresh Comments" action
+### GET `/api/interactions/posts/:postId/comments`
+Retrieves all comments for a specific post.
+Public endpoint accessible without authentication.
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Comments fetched successfully",
   "data": {
-    "comments": [Comment, Comment, ...]
+    "comments": [
+      {
+        "id": 1,
+        "content": "Great post!",
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "author": {
+          "id": 2,
+          "name": "Jane Smith"
+        }
+      }
+    ]
   }
 }
 ```
 
-**Frontend Action:** Display comments list under post
-
 **Error Responses:**
-- **400** - Invalid post ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid post ID"
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to fetch comments"
-  }
-  ```
+- `400`: Invalid post ID
+- `404`: Post not found
 
-### Add Comment Button Click
+### POST `/api/interactions/posts/:postId/comments` 🔒
+Adds a new comment to a post by the authenticated user.
+Validates comment content length and sanitizes input.
 
-**Route:** `POST /api/interactions/posts/:postId/comments`
-
-**When to Call:**
-
--   "Post Comment" or "Submit" button click
--   "Reply" button click (if implementing)
-
-**Authentication Required:** Yes
-
-**Request:**
-
+**Request Body:**
 ```json
 {
-	"content": "This is my comment"
+  "content": "This is my comment on the post."
 }
 ```
 
 **Success Response (201):**
-
 ```json
 {
   "status": "success",
   "message": "Comment added successfully",
   "data": {
-    "comment": Comment
+    "comment": {
+      "id": 2,
+      "content": "This is my comment on the post.",
+      "createdAt": "2024-01-01T01:00:00.000Z",
+      "author": {
+        "id": 1,
+        "name": "John Doe"
+      }
+    }
   }
 }
 ```
 
-**Frontend Action:** Add comment to comments list, clear comment form
-
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Comment content is required" // or "Invalid post ID"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to add comment"
-  }
-  ```
+- `400`: Invalid post ID or missing content
+- `401`: Authentication required
+- `404`: Post not found
 
-### Edit Comment Button Click
+### PUT/PATCH `/api/interactions/comments/:commentId` 🔒
+Updates a comment owned by the authenticated user.
+Validates content and ensures user ownership.
 
-**Route:** `PUT /api/interactions/comments/:commentId` or
-`PATCH /api/interactions/comments/:commentId`
-
-**When to Call:**
-
--   "Edit" button click on comment
--   "Save Changes" button click in edit mode
-
-**Authentication Required:** Yes - must be comment author
-
-**Request:**
-
+**Request Body:**
 ```json
 {
-	"content": "Updated comment content"
+  "content": "Updated comment content."
 }
 ```
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Comment updated successfully",
   "data": {
-    "comment": Comment
+    "comment": {
+      "id": 1,
+      "content": "Updated comment content.",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "id": 1,
+        "name": "John Doe"
+      }
+    }
   }
 }
 ```
 
-**Frontend Action:** Update comment in UI, exit edit mode
-
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Comment content is required" // or "Invalid comment ID"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **403** - Not comment owner:
-  ```json
-  {
-    "status": "error",
-    "message": "You can only update your own comments"
-  }
-  ```
-- **404** - Comment not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Comment not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to update comment"
-  }
-  ```
+- `400`: Invalid comment ID or missing content
+- `401`: Authentication required
+- `403`: Can only update own comments
+- `404`: Comment not found
 
-### Delete Comment Button Click
-
-**Route:** `DELETE /api/interactions/comments/:commentId`
-
-**When to Call:**
-
--   "Delete" button click on comment (with confirmation)
--   "Remove" action click
-
-**Authentication Required:** Yes - must be comment author
+### DELETE `/api/interactions/comments/:commentId` 🔒
+Deletes a comment owned by the authenticated user.
+Permanently removes the comment from the database.
 
 **Success Response (200):**
-
 ```json
 {
-	"status": "success",
-	"message": "Comment deleted successfully"
+  "status": "success",
+  "message": "Comment deleted successfully"
 }
 ```
 
-**Frontend Action:** Remove comment from UI
-
 **Error Responses:**
-- **400** - Invalid comment ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid comment ID"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **403** - Not comment owner:
-  ```json
-  {
-    "status": "error",
-    "message": "You can only delete your own comments"
-  }
-  ```
-- **404** - Comment not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Comment not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to delete comment"
-  }
-  ```
-
-### Like/Unlike Button Click
-
-**Route:** `POST /api/interactions/posts/:postId/like`
-
-**When to Call:**
-
--   "Like" button click (heart, thumbs up, etc.)
--   "Unlike" button click (same button, toggle behavior)
-
-**Authentication Required:** Yes
-
-**Success Response (200):**
-
-```json
-{
-	"status": "success",
-	"message": "Post liked successfully", // or "Post unliked successfully"
-	"data": {
-		"isLiked": true,
-		"likeCount": 5
-	}
-}
-```
-
-**Frontend Action:**
-
--   Update like button state (filled/unfilled)
--   Update like count display
--   No redirect needed
-
-**Error Responses:**
-- **400** - Invalid post ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid post ID"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to toggle like"
-  }
-  ```
+- `400`: Invalid comment ID
+- `401`: Authentication required
+- `403`: Can only delete own comments
+- `404`: Comment not found
 
 ---
 
-## 👤 Profile Routes & Frontend Actions
+## Profile Routes (`/api/profile`)
 
-### Profile Object
-
-```json
-{
-	"id": 1,
-	"name": "John Doe",
-	"email": "john@example.com",
-	"bio": "This is my bio"
-}
-```
-
-### Profile Page Load
-
-**Route:** `GET /api/profile`
-
-**When to Call:**
-
--   "Profile" navigation click
--   "Settings" or "Account" page load
--   "Edit Profile" button click
-
-**Authentication Required:** Yes
+### GET `/api/profile` 🔒
+Retrieves the authenticated user's profile information.
+Returns user details and bio from profile table.
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Profile fetched successfully",
   "data": {
-    "profile": Profile
+    "profile": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "bio": "Software developer passionate about web technologies."
+    }
   }
 }
 ```
 
-**Frontend Action:** Display profile information in form/view
-
 **Error Responses:**
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **404** - User not found:
-  ```json
-  {
-    "status": "error",
-    "message": "User not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to fetch profile"
-  }
-  ```
+- `401`: Authentication required
+- `404`: User not found
 
-### Update Profile Button Click
+### PUT/PATCH `/api/profile` 🔒
+Updates the authenticated user's profile information.
+Allows updating name and bio with validation.
 
-**Route:** `PUT /api/profile` or `PATCH /api/profile`
-
-**When to Call:**
-
--   "Save Profile" button click
--   "Update" button click in profile form
-
-**Authentication Required:** Yes
-
-**Request (all fields optional):**
-
+**Request Body:**
 ```json
 {
-	"name": "Updated Name",
-	"bio": "Updated bio content"
+  "name": "John Smith",
+  "bio": "Updated bio description."
 }
 ```
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Profile updated successfully",
   "data": {
-    "profile": Profile
+    "profile": {
+      "id": 1,
+      "name": "John Smith",
+      "email": "john@example.com",
+      "bio": "Updated bio description."
+    }
   }
 }
 ```
 
-**Frontend Action:** Update profile display, show success message
-
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "No update data provided" // or "Name must be at least 2 characters long"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **404** - User not found:
-  ```json
-  {
-    "status": "error",
-    "message": "User not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to update profile"
-  }
-  ```
+- `400`: No update data or name too short
+- `401`: Authentication required
+- `404`: User not found
 
 ---
 
-## 🏷️ Tags Routes & Frontend Actions
+## Tags Routes (`/api/tags`)
 
-### Tag Object
-
-```json
-{
-	"id": 1,
-	"name": "javascript",
-	"postsCount": 15
-}
-```
-
-### Load All Tags
-
-**Route:** `GET /api/tags`
-
-**When to Call:**
-
--   Tags page load
--   Tag selector dropdown load
--   "Browse Tags" button click
+### GET `/api/tags`
+Retrieves all available tags with post counts.
+Public endpoint showing tag usage statistics.
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Tags fetched successfully",
   "data": {
-    "tags": [Tag, Tag, ...]
+    "tags": [
+      {
+        "id": 1,
+        "name": "javascript",
+        "postsCount": 15
+      },
+      {
+        "id": 2,
+        "name": "react",
+        "postsCount": 8
+      }
+    ]
   }
 }
 ```
 
-**Frontend Action:** Display tags list or populate dropdown
-
-**Error Response (500):**
-```json
-{
-  "status": "error",
-  "message": "Failed to fetch tags"
-}
-```
-
-### Tag Click / Filter by Tag
-
-**Route:** `GET /api/tags/:tagId/posts`
-
-**When to Call:**
-
--   Tag button/chip click
--   "View posts with this tag" click
--   Tag filter selection
+### GET `/api/tags/:tagId/posts`
+Retrieves all published posts associated with a specific tag.
+Shows posts with like status for authenticated users.
 
 **Success Response (200):**
-
 ```json
 {
   "status": "success",
   "message": "Posts fetched successfully",
   "data": {
-    "posts": [Post, Post, ...]
+    "posts": [
+      {
+        "id": 1,
+        "title": "JavaScript Basics",
+        "content": "Learning JavaScript...",
+        "published": true,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z",
+        "author": {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "commentsCount": 3,
+        "likesCount": 7,
+        "isLikedByUser": false,
+        "tags": [
+          {
+            "id": 1,
+            "name": "javascript"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-**Frontend Action:** Display filtered posts, update URL/breadcrumb
-
 **Error Responses:**
-- **400** - Invalid tag ID:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid tag ID"
-  }
-  ```
-- **404** - Tag not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Tag not found"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to fetch posts by tag"
-  }
-  ```
+- `400`: Invalid tag ID
+- `404`: Tag not found
 
-### Add Tag to Post Button Click
+### POST `/api/tags/posts/:postId` 🔒
+Adds a tag to a post owned by the authenticated user.
+Creates new tag if it doesn't exist.
 
-**Route:** `POST /api/tags/posts/:postId`
-
-**When to Call:**
-
--   "Add Tag" button click in post editor
--   Tag input submit in post form
--   "Save Tags" button click
-
-**Authentication Required:** Yes - must be post author
-
-**Request:**
-
+**Request Body:**
 ```json
 {
-	"tagName": "javascript"
+  "tagName": "nodejs"
 }
 ```
 
 **Success Response (201):**
-
 ```json
 {
-	"status": "success",
-	"message": "Tag added to post successfully",
-	"data": {
-		"tag": {
-			"id": 1,
-			"name": "javascript"
-		}
-	}
+  "status": "success",
+  "message": "Tag added to post successfully",
+  "data": {
+    "tag": {
+      "id": 3,
+      "name": "nodejs"
+    }
+  }
 }
 ```
 
-**Frontend Action:** Add tag to post's tag list, clear input
-
 **Error Responses:**
-- **400** - Validation errors:
-  ```json
-  {
-    "status": "error",
-    "message": "Tag name is required" // or validation rules
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **403** - Not post owner:
-  ```json
-  {
-    "status": "error",
-    "message": "You can only add tags to your own posts"
-  }
-  ```
-- **404** - Post not found:
-  ```json
-  {
-    "status": "error",
-    "message": "Post not found"
-  }
-  ```
-- **409** - Tag already exists:
-  ```json
-  {
-    "status": "error",
-    "message": "Tag already exists on this post"
-  }
-  ```
-- **500** - Server error:
-  ```json
-  {
-    "status": "error",
-    "message": "Failed to add tag to post"
-  }
-  ```
+- `400`: Invalid post ID, missing tag name, or invalid tag format
+- `401`: Authentication required
+- `403`: Can only add tags to own posts
+- `404`: Post not found
+- `409`: Tag already exists on this post
 
-### Remove Tag from Post Click
-**Route:** `DELETE /api/tags/posts/:postId/:tagId`
-
-**When to Call:** 
-- "X" button click on tag chip
-- "Remove Tag" button click
-- Tag deletion in post editor
-
-**Authentication Required:** Yes - must be post author
+### DELETE `/api/tags/posts/:postId/:tagId` 🔒
+Removes a tag from a post owned by the authenticated user.
+Only removes the association, doesn't delete the tag itself.
 
 **Success Response (200):**
 ```json
@@ -1322,25 +717,111 @@ All responses follow this format:
 }
 ```
 
-**Frontend Action:** Remove tag from post's tag list
+**Error Responses:**
+- `400`: Invalid post ID or tag ID
+- `401`: Authentication required
+- `403`: Can only remove tags from own posts
+- `404`: Post not found or tag not found on this post
+
+### GET `/api/tags/liked` 🔒
+Retrieves tags that the authenticated user has liked through post interactions.
+Shows tags from posts the user has liked.
+
+**Success Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Your liked tags fetched successfully",
+  "data": {
+    "tags": [
+      {
+        "id": 1,
+        "name": "javascript",
+        "postsCount": 15
+      },
+      {
+        "id": 2,
+        "name": "react",
+        "postsCount": 8
+      }
+    ]
+  }
+}
+```
 
 **Error Responses:**
-- **400** - Invalid IDs:
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid post ID" // or "Invalid tag ID"
-  }
-  ```
-- **401** - Unauthorized:
-  ```json
-  {
-    "status": "error",
-    "message": "Access token required. Please login."
-  }
-  ```
-- **403** - Not post owner:
-  ```json
-  {
-    "status": "error",
-    "message": "You can only remove tags from your own posts"
+- `401`: Authentication required
+
+---
+
+## Additional Routes
+
+### GET `/`
+Home route displaying all published posts.
+Uses optional authentication for enhanced features.
+
+### GET `/health`
+Health check endpoint for server status monitoring.
+Returns server information and timestamp.
+
+**Success Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Server is running",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "environment": "development"
+}
+```
+
+### GET `/api`
+API information endpoint with available endpoints.
+Returns API version and endpoint documentation links.
+
+**Success Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Blog API v1.0",
+  "endpoints": {
+    "auth": "/api/auth",
+    "posts": "/api/posts",
+    "interactions": "/api/interactions",
+    "profile": "/api/profile",
+    "tags": "/api/tags"
+  },
+  "docs": "Visit /api/docs for detailed documentation"
+}
+```
+
+---
+
+## Error Handling
+
+### Common Error Codes
+- `400`: Bad Request - Invalid input or parameters
+- `401`: Unauthorized - Authentication required or invalid token
+- `403`: Forbidden - Insufficient permissions
+- `404`: Not Found - Resource doesn't exist
+- `409`: Conflict - Resource already exists
+- `500`: Internal Server Error - Server-side error
+
+### Error Response Format
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
+
+---
+
+## Notes
+
+🔒 = Requires Authentication
+
+- All timestamps are in ISO 8601 format
+- Authentication tokens are managed via HTTP-only cookies
+- Input sanitization is applied to prevent XSS attacks
+- Rate limiting and CORS are configured for production use
+- Database transactions ensure data consistency for complex operations
