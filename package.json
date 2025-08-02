@@ -1,37 +1,55 @@
 {
-	"name": "saas-blog-backend",
+	"name": "blog-api",
 	"version": "1.0.0",
-	"description": "Backend for a multi-user SaaS blog CMS using Express, JWT, and MySQL",
+	"description": "Enhanced Blog API with security and performance improvements",
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
 		"start": "node index.js",
 		"dev": "nodemon index.js",
-		"lint": "echo \"No linter configured\"",
-		"test": "echo \"No tests configured\""
+		"db:migrate": "prisma migrate dev",
+		"db:generate": "prisma generate",
+		"db:studio": "prisma studio",
+		"db:seed": "node prisma/seed.js",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix"
 	},
-	"keywords": [
-		"express",
-		"saas",
-		"blog",
-		"jwt",
-		"mysql"
-	],
-	"author": "Your Name",
-	"license": "MIT",
 	"dependencies": {
-		"@prisma/client": "^6.12.0",
-		"bcryptjs": "^3.0.2",
-		"cookie-parser": "^1.4.7",
+		"express": "^4.18.2",
+		"prisma": "^5.7.1",
+		"@prisma/client": "^5.7.1",
+		"bcryptjs": "^2.4.3",
+		"jsonwebtoken": "^9.0.2",
+		"cookie-parser": "^1.4.6",
+		"helmet": "^7.1.0",
 		"cors": "^2.8.5",
-		"crypto-js": "^4.2.0",
-		"express": "^5.1.0",
-		"jsonwebtoken": "^9.0.2"
+		"express-rate-limit": "^7.1.5",
+		"isomorphic-dompurify": "^2.6.0",
+		"dotenv": "^16.3.1",
+		"crypto": "^1.0.1"
 	},
 	"devDependencies": {
-		"@types/express": "^5.0.3",
-		"@types/jsonwebtoken": "^9.0.10",
-		"nodemon": "^3.1.10",
-		"prisma": "^6.12.0"
-	}
+		"nodemon": "^3.0.2",
+		"jest": "^29.7.0",
+		"supertest": "^6.3.3",
+		"eslint": "^8.56.0",
+		"@babel/core": "^7.23.6",
+		"@babel/preset-env": "^7.23.6"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"keywords": [
+		"blog",
+		"api",
+		"express",
+		"prisma",
+		"jwt",
+		"authentication",
+		"mysql"
+	],
+	"author": "Blog API Team",
+	"license": "MIT"
 }

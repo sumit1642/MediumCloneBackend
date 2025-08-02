@@ -10,39 +10,52 @@ datasource db {
 
 model User {
     id            Int            @id @default(autoincrement())
-    email         String         @unique
-    name          String?
-    password      String
+    email         String         @unique @db.VarChar(255)
+    name          String?        @db.VarChar(100)
+    password      String         @db.VarChar(255)
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
     posts         Post[]
     profile       Profile?
     refreshTokens RefreshToken[]
     comments      Comment[]
     likes         Like[]
     likedTags     UserLikedTag[]
+
+    @@index([email])
+    @@index([createdAt])
 }
 
 model Profile {
-    id     Int     @id @default(autoincrement())
-    bio    String?
-    userId Int     @unique
-    user   User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+    id        Int      @id @default(autoincrement())
+    bio       String?  @db.Text
+    userId    Int      @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
 }
 
 model RefreshToken {
     id        Int      @id @default(autoincrement())
-    token     String   @unique
+    token     String   @unique @db.VarChar(255)
     userId    Int
     user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
     expiresAt DateTime
     createdAt DateTime @default(now())
+
+    @@index([userId])
+    @@index([expiresAt])
+    @@index([token])
 }
 
 model Post {
     id        Int       @id @default(autoincrement())
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
-    title     String    @db.VarChar(50)
-    content   String?   @db.VarChar(191)
+    title     String    @db.VarChar(100)
+    content   String?   @db.Text
     published Boolean   @default(false)
     authorId  Int
     author    User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
@@ -50,52 +63,76 @@ model Post {
     likes     Like[]
     tags      PostTag[]
 
-    @@unique([authorId, title]) //   Unique per user
+    @@unique([authorId, title])
+    @@index([published])
+    @@index([createdAt])
+    @@index([authorId])
+    @@index([published, createdAt])
+    @@fulltext([title, content])
 }
 
 model Comment {
     id        Int      @id @default(autoincrement())
-    content   String
+    content   String   @db.Text
     createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
     postId    Int
     post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
     authorId  Int
-    author    User     @relation(fields: [authorId], references: [id])
+    author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+    @@index([postId])
+    @@index([authorId])
+    @@index([createdAt])
+    @@index([postId, createdAt])
 }
 
 model Like {
-    userId Int
-    postId Int
+    userId    Int
+    postId    Int
+    createdAt DateTime @default(now())
 
-    user User @relation(fields: [userId], references: [id])
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
     post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
     @@id([userId, postId])
+    @@index([postId])
+    @@index([userId])
+    @@index([createdAt])
 }
 
 model Tag {
-    id      Int            @id @default(autoincrement())
-    name    String         @unique
-    posts   PostTag[]
-    likedBy UserLikedTag[] // Users who liked this tag through a liked post
+    id        Int            @id @default(autoincrement())
+    name      String         @unique @db.VarChar(50)
+    createdAt DateTime       @default(now())
+    posts     PostTag[]
+    likedBy   UserLikedTag[]
+
+    @@index([name])
 }
 
 model PostTag {
-    postId Int
-    tagId  Int
+    postId    Int
+    tagId     Int
+    createdAt DateTime @default(now())
 
     post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-    tag  Tag  @relation(fields: [tagId], references: [id])
+    tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
     @@id([postId, tagId])
+    @@index([tagId])
+    @@index([postId])
 }
 
 model UserLikedTag {
-    userId Int
-    tagId  Int
+    userId    Int
+    tagId     Int
+    createdAt DateTime @default(now())
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
     tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
     @@id([userId, tagId])
+    @@index([userId])
+    @@index([tagId])
 }

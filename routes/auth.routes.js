@@ -1,37 +1,55 @@
 // routes/auth.routes.js
-import express from "express";
+import express from "express"
 import {
 	loginUser,
 	refreshUserToken,
 	registerNewUser,
 	logoutCurrentUser,
-} from "../controllers/auth.controller.js";
+	validateSession,
+	getCurrentUser,
+} from "../controllers/auth.controller.js"
 import {
 	validateLoginCredentials,
 	validateRegistrationData,
 	redirectIfAuthenticated,
-} from "../middleware/auth.middleware.js";
+	validateCSRF,
+} from "../middleware/auth.middleware.js"
+import { requireAuth } from "../middleware/posts.middleware.js"
+import { authRateLimit } from "../utils/security.js"
 
-export const authenticationRoutes = express.Router();
+export const authenticationRoutes = express.Router()
 
-// Public authentication routes with redirect protection for logged-in users
-// If user is already authenticated, they will be redirected to home page
+// Apply CSRF protection to state-changing operations
+// Apply stricter rate limiting to auth endpoints
 
 // User registration endpoint - creates new user account
 authenticationRoutes.post(
 	"/register",
+	authRateLimit,
 	redirectIfAuthenticated,
+	validateCSRF,
 	validateRegistrationData,
 	registerNewUser,
-);
+)
 
 // User login endpoint - authenticates existing user
-authenticationRoutes.post("/login", redirectIfAuthenticated, validateLoginCredentials, loginUser);
+authenticationRoutes.post(
+	"/login",
+	authRateLimit,
+	redirectIfAuthenticated,
+	validateCSRF,
+	validateLoginCredentials,
+	loginUser,
+)
 
 // Token refresh endpoint - generates new access token using refresh token
-// Note: No redirect middleware here as authenticated users need to refresh tokens
-authenticationRoutes.post("/refresh", refreshUserToken);
+authenticationRoutes.post("/refresh", authRateLimit, refreshUserToken)
 
 // User logout endpoint - clears authentication tokens
-// Note: No redirect middleware here as authenticated users need to logout
-authenticationRoutes.post("/logout", logoutCurrentUser);
+authenticationRoutes.post("/logout", validateCSRF, logoutCurrentUser)
+
+// Session validation endpoint - checks if current session is valid
+authenticationRoutes.get("/validate", validateSession)
+
+// Get current user info - requires authentication
+authenticationRoutes.get("/me", requireAuth, getCurrentUser)
