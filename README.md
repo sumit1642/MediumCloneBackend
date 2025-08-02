@@ -6,26 +6,15 @@ http://localhost:3000
 ```
 
 ## Authentication
-The API uses JWT tokens stored in HTTP-only cookies:
+JWT tokens stored in HTTP-only cookies:
 - `accessToken`: 15 minutes expiry
 - `refreshToken`: 7 days expiry
-
-## Standard Response Format
-```json
-{
-  "status": "success" | "error",
-  "message": "Response message",
-  "data": {} // Present on success responses
-}
-```
 
 ---
 
 ## Authentication Routes (`/api/auth`)
 
 ### POST `/api/auth/register`
-Creates a new user account with email, password, and name.
-Redirects authenticated users to home page.
 
 **Request Body:**
 ```json
@@ -36,7 +25,7 @@ Redirects authenticated users to home page.
 }
 ```
 
-**Success Response (201):**
+**Success Response:** 201
 ```json
 {
   "status": "success",
@@ -51,14 +40,15 @@ Redirects authenticated users to home page.
 }
 ```
 
-**Error Responses:**
-- `400`: Validation errors (missing fields, invalid email, weak password)
-- `409`: User already exists
-- `500`: Registration failed
+**Error Responses:** 400, 409, 500
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### POST `/api/auth/login`
-Authenticates user with email and password, sets authentication cookies.
-Redirects authenticated users to home page.
 
 **Request Body:**
 ```json
@@ -68,7 +58,7 @@ Redirects authenticated users to home page.
 }
 ```
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -83,16 +73,17 @@ Redirects authenticated users to home page.
 }
 ```
 
-**Error Responses:**
-- `400`: Missing email or password
-- `401`: Invalid credentials
-- `500`: Login failed
+**Error Responses:** 400, 401, 500
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### POST `/api/auth/refresh`
-Generates new access token using refresh token from cookies.
-Rotates both access and refresh tokens.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -107,15 +98,17 @@ Rotates both access and refresh tokens.
 }
 ```
 
-**Error Responses:**
-- `401`: Missing or invalid refresh token
-- `401`: Token expired
+**Error Responses:** 401
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### POST `/api/auth/logout`
-Clears authentication cookies and removes refresh token from database.
-Always returns success even if token doesn't exist.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -128,13 +121,11 @@ Always returns success even if token doesn't exist.
 ## Posts Routes (`/api/posts`)
 
 ### GET `/api/posts`
-Retrieves all published posts with optional authentication for enhanced features.
-Query parameter `published=false` shows drafts (only for authenticated users).
 
 **Query Parameters:**
 - `published`: "true" (default) | "false"
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -169,10 +160,8 @@ Query parameter `published=false` shows drafts (only for authenticated users).
 ```
 
 ### GET `/api/posts/:postId`
-Retrieves a specific post by ID with comments included.
-Shows draft posts only to their authors.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -193,7 +182,12 @@ Shows draft posts only to their authors.
       "commentsCount": 2,
       "likesCount": 5,
       "isLikedByUser": true,
-      "tags": [],
+      "tags": [
+        {
+          "id": 1,
+          "name": "javascript"
+        }
+      ],
       "comments": [
         {
           "id": 1,
@@ -210,13 +204,15 @@ Shows draft posts only to their authors.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID
-- `404`: Post not found
+**Error Responses:** 400, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### POST `/api/posts` 🔒
-Creates a new post for the authenticated user.
-Requires authentication and validates title uniqueness per user.
 
 **Request Body:**
 ```json
@@ -227,7 +223,7 @@ Requires authentication and validates title uniqueness per user.
 }
 ```
 
-**Success Response (201):**
+**Success Response:** 201
 ```json
 {
   "status": "success",
@@ -254,14 +250,15 @@ Requires authentication and validates title uniqueness per user.
 }
 ```
 
-**Error Responses:**
-- `400`: Missing title or content
-- `401`: Authentication required
-- `409`: Title already exists for this user
+**Error Responses:** 400, 401, 409
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### PUT/PATCH `/api/posts/:postId` 🔒
-Updates an existing post owned by the authenticated user.
-Allows partial updates of title, content, and published status.
 
 **Request Body:**
 ```json
@@ -272,7 +269,7 @@ Allows partial updates of title, content, and published status.
 }
 ```
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -299,18 +296,17 @@ Allows partial updates of title, content, and published status.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID or no update data
-- `401`: Authentication required
-- `403`: Can only update own posts
-- `404`: Post not found
-- `409`: Title already exists
+**Error Responses:** 400, 401, 403, 404, 409
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### DELETE `/api/posts/:postId` 🔒
-Deletes a post owned by the authenticated user.
-Cascades to delete all related comments, likes, and tags.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -318,17 +314,17 @@ Cascades to delete all related comments, likes, and tags.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID
-- `401`: Authentication required
-- `403`: Can only delete own posts
-- `404`: Post not found
+**Error Responses:** 400, 401, 403, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### GET `/api/posts/user/:userId`
-Retrieves all posts by a specific user.
-Shows only published posts unless requesting user is the author.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -357,15 +353,17 @@ Shows only published posts unless requesting user is the author.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid user ID
-- `404`: User not found
+**Error Responses:** 400, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### GET `/api/posts/my/posts` 🔒
-Retrieves all posts owned by the authenticated user.
-Shows both published and draft posts.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -394,18 +392,23 @@ Shows both published and draft posts.
 }
 ```
 
-**Error Responses:**
-- `401`: Authentication required
+**Error Responses:** 401
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ---
 
 ## Interactions Routes (`/api/interactions`)
 
 ### POST `/api/interactions/posts/:postId/like` 🔒
-Toggles like status for a post by the authenticated user.
-Also manages user's liked tags based on post tags.
 
-**Success Response (200):**
+*User clicks like button - no page change needed, updates like count and button state*
+
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -417,16 +420,19 @@ Also manages user's liked tags based on post tags.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID
-- `401`: Authentication required
-- `404`: Post not found
+**Error Responses:** 400, 401, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### GET `/api/interactions/posts/:postId/comments`
-Retrieves all comments for a specific post.
-Public endpoint accessible without authentication.
 
-**Success Response (200):**
+*Get comments for post display - no user action needed*
+
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -447,13 +453,17 @@ Public endpoint accessible without authentication.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID
-- `404`: Post not found
+**Error Responses:** 400, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### POST `/api/interactions/posts/:postId/comments` 🔒
-Adds a new comment to a post by the authenticated user.
-Validates comment content length and sanitizes input.
+
+*User submits comment form - no page change, updates comment list*
 
 **Request Body:**
 ```json
@@ -462,7 +472,7 @@ Validates comment content length and sanitizes input.
 }
 ```
 
-**Success Response (201):**
+**Success Response:** 201
 ```json
 {
   "status": "success",
@@ -481,14 +491,17 @@ Validates comment content length and sanitizes input.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID or missing content
-- `401`: Authentication required
-- `404`: Post not found
+**Error Responses:** 400, 401, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### PUT/PATCH `/api/interactions/comments/:commentId` 🔒
-Updates a comment owned by the authenticated user.
-Validates content and ensures user ownership.
+
+*User clicks edit comment button - no page change, updates comment inline*
 
 **Request Body:**
 ```json
@@ -497,7 +510,7 @@ Validates content and ensures user ownership.
 }
 ```
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -516,17 +529,19 @@ Validates content and ensures user ownership.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid comment ID or missing content
-- `401`: Authentication required
-- `403`: Can only update own comments
-- `404`: Comment not found
+**Error Responses:** 400, 401, 403, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### DELETE `/api/interactions/comments/:commentId` 🔒
-Deletes a comment owned by the authenticated user.
-Permanently removes the comment from the database.
 
-**Success Response (200):**
+*User clicks delete comment button - no page change, removes comment from list*
+
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -534,21 +549,21 @@ Permanently removes the comment from the database.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid comment ID
-- `401`: Authentication required
-- `403`: Can only delete own comments
-- `404`: Comment not found
+**Error Responses:** 400, 401, 403, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ---
 
 ## Profile Routes (`/api/profile`)
 
 ### GET `/api/profile` 🔒
-Retrieves the authenticated user's profile information.
-Returns user details and bio from profile table.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -564,13 +579,15 @@ Returns user details and bio from profile table.
 }
 ```
 
-**Error Responses:**
-- `401`: Authentication required
-- `404`: User not found
+**Error Responses:** 401, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### PUT/PATCH `/api/profile` 🔒
-Updates the authenticated user's profile information.
-Allows updating name and bio with validation.
 
 **Request Body:**
 ```json
@@ -580,7 +597,7 @@ Allows updating name and bio with validation.
 }
 ```
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -596,20 +613,21 @@ Allows updating name and bio with validation.
 }
 ```
 
-**Error Responses:**
-- `400`: No update data or name too short
-- `401`: Authentication required
-- `404`: User not found
+**Error Responses:** 400, 401, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ---
 
 ## Tags Routes (`/api/tags`)
 
 ### GET `/api/tags`
-Retrieves all available tags with post counts.
-Public endpoint showing tag usage statistics.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -632,10 +650,8 @@ Public endpoint showing tag usage statistics.
 ```
 
 ### GET `/api/tags/:tagId/posts`
-Retrieves all published posts associated with a specific tag.
-Shows posts with like status for authenticated users.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -669,13 +685,15 @@ Shows posts with like status for authenticated users.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid tag ID
-- `404`: Tag not found
+**Error Responses:** 400, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### POST `/api/tags/posts/:postId` 🔒
-Adds a tag to a post owned by the authenticated user.
-Creates new tag if it doesn't exist.
 
 **Request Body:**
 ```json
@@ -684,7 +702,7 @@ Creates new tag if it doesn't exist.
 }
 ```
 
-**Success Response (201):**
+**Success Response:** 201
 ```json
 {
   "status": "success",
@@ -698,18 +716,17 @@ Creates new tag if it doesn't exist.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID, missing tag name, or invalid tag format
-- `401`: Authentication required
-- `403`: Can only add tags to own posts
-- `404`: Post not found
-- `409`: Tag already exists on this post
+**Error Responses:** 400, 401, 403, 404, 409
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### DELETE `/api/tags/posts/:postId/:tagId` 🔒
-Removes a tag from a post owned by the authenticated user.
-Only removes the association, doesn't delete the tag itself.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -717,17 +734,17 @@ Only removes the association, doesn't delete the tag itself.
 }
 ```
 
-**Error Responses:**
-- `400`: Invalid post ID or tag ID
-- `401`: Authentication required
-- `403`: Can only remove tags from own posts
-- `404`: Post not found or tag not found on this post
+**Error Responses:** 400, 401, 403, 404
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ### GET `/api/tags/liked` 🔒
-Retrieves tags that the authenticated user has liked through post interactions.
-Shows tags from posts the user has liked.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -749,22 +766,57 @@ Shows tags from posts the user has liked.
 }
 ```
 
-**Error Responses:**
-- `401`: Authentication required
+**Error Responses:** 401
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
 
 ---
 
 ## Additional Routes
 
 ### GET `/`
-Home route displaying all published posts.
-Uses optional authentication for enhanced features.
+
+**Success Response:** 200
+```json
+{
+  "status": "success",
+  "message": "Posts fetched successfully",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "My First Post",
+        "content": "This is the content...",
+        "published": true,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z",
+        "author": {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "commentsCount": 5,
+        "likesCount": 10,
+        "isLikedByUser": false,
+        "tags": [
+          {
+            "id": 1,
+            "name": "javascript"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### GET `/health`
-Health check endpoint for server status monitoring.
-Returns server information and timestamp.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -775,10 +827,8 @@ Returns server information and timestamp.
 ```
 
 ### GET `/api`
-API information endpoint with available endpoints.
-Returns API version and endpoint documentation links.
 
-**Success Response (200):**
+**Success Response:** 200
 ```json
 {
   "status": "success",
@@ -796,32 +846,47 @@ Returns API version and endpoint documentation links.
 
 ---
 
-## Error Handling
+## Backend Automatic Handling
 
-### Common Error Codes
-- `400`: Bad Request - Invalid input or parameters
-- `401`: Unauthorized - Authentication required or invalid token
-- `403`: Forbidden - Insufficient permissions
-- `404`: Not Found - Resource doesn't exist
-- `409`: Conflict - Resource already exists
-- `500`: Internal Server Error - Server-side error
+### JWT & Cookies
+- Automatic JWT token generation and verification
+- HTTP-only cookie setting and clearing
+- Token rotation on refresh (new access + refresh tokens)
+- Expired token cleanup from database
+- Secure cookie configuration (httpOnly, secure, sameSite)
 
-### Error Response Format
-```json
-{
-  "status": "error",
-  "message": "Error description"
-}
-```
+### Authentication
+- Password hashing with bcrypt (12 salt rounds)
+- User session management
+- Automatic redirect for authenticated users on auth routes
+- Optional authentication middleware for public routes
+
+### Data Processing
+- Input sanitization (XSS prevention)
+- Email format validation and normalization
+- Tag name transformation (lowercase, hyphen replacement)
+- Duplicate title validation per user
+- Foreign key constraint handling
+
+### Database Operations
+- Transaction handling for data consistency
+- Cascade deletions (posts → comments, likes, tags)
+- Automatic timestamp management (createdAt, updatedAt)
+- User liked tags management on post likes/unlikes
+- Profile creation on user registration
+
+### Security
+- CORS configuration
+- Security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
+- Request body size limits
+- Error handling without sensitive data exposure
+
+### Validation
+- Post content length limits
+- Comment content validation
+- Tag name format validation (alphanumeric + hyphens)
+- User authorization checks for resource ownership
 
 ---
 
-## Notes
-
 🔒 = Requires Authentication
-
-- All timestamps are in ISO 8601 format
-- Authentication tokens are managed via HTTP-only cookies
-- Input sanitization is applied to prevent XSS attacks
-- Rate limiting and CORS are configured for production use
-- Database transactions ensure data consistency for complex operations
